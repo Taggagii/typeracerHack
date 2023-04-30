@@ -8,8 +8,12 @@ const port = 3000;
 app.use(cors())
 
 app.get('/', async (req, res) => {
-    const text = await getContentOfImage(req.query.imageURL);
-    res.send(text);
+    try {
+        const text = await getContentOfImage(req.query.imageURL);
+        res.send(text);
+    } catch (error) {
+        console.error(error);
+    }
 })
 
 app.listen(port, () => {
@@ -23,9 +27,19 @@ const getContentOfImage = async (imageURL) => {
     const page = await browser.newPage();
 
     await page.goto('https://www.imagetotext.info');
+    console.log("here we go");
     const textContentOfImage = await page.evaluate(async (urlofimage) => {
+        console.log("here we are now");
         let data = new FormData();
         data.append("base64", urlofimage);
+        
+        console.log("avoiding csrf problems");
+        $.ajaxSetup({
+            headers: {
+                "X-CSRF-TOKEN": $('meta[name="_token"]').attr("content")
+            }
+        });
+        
         console.log('making the request')
         const response = await $.ajax({
                 type: "POST",
@@ -36,6 +50,11 @@ const getContentOfImage = async (imageURL) => {
                 mimeType: "multipart/form-data",
                 data,
         });
+
+        console.log("response");
+        console.log(response);
+
+        console.log("afterwards?");
     
         savedStuff = JSON.parse(response).text;
         console.log(savedStuff);
